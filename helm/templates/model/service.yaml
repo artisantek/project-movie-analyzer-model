@@ -1,0 +1,15 @@
+---
+# Model Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.model.name }}
+  labels:
+    app: {{ .Values.model.name }}
+spec:
+  selector:
+    app: {{ .Values.model.name }}
+  ports:
+  - port: {{ .Values.model.service.port }}
+    targetPort: {{ .Values.model.service.targetPort }}
+  type: {{ .Values.model.service.type }} 

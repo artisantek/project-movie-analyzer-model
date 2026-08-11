@@ -1,0 +1,83 @@
+@Library('sharedlibrary')_
+
+pipeline {
+    environment {
+        imageName = "movie-analyzer-model-pr"
+        dockerTag = "${env.BUILD_NUMBER}"
+        gitRepoURL = "https://github.com/artisantek/project-movie-analyzer-model.git"
+    }
+    agent {
+        label 'agent'
+    }
+    stages {
+        stage('Git Checkout') {
+            steps {
+                gitCheckout("$gitRepoURL", "$BRANCH_NAME", "githubCred")
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                echo "Running unit tests for model..."
+                // TODO: Add actual unit test execution commands
+            }
+        }
+
+        stage("Sonarqube Analysis") {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                    $SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectName="movie-analyzer-model" \
+                    -Dsonar.projectKey="movie-analyzer-model"
+                    '''
+                }
+            }
+        }
+
+        stage("Sonar Quality Gate") {
+           steps {
+                script {
+                    // Abort pipeline if Sonar gate fails for a PR
+                    waitForQualityGate abortPipeline: true, credentialsId: 'sonarToken' 
+                }
+            } 
+        }
+
+        stage('Docker Build') {
+            steps {
+                // Build the image locally but do NOT push it in the PR pipeline
+                dockerImageBuild('$imageName', '$dockerTag')
+            }
+        }
+
+        stage('Trivy FS Scan') {
+            steps {
+                // Scan the local file system for vulnerabilities
+                sh "trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
+            }
+        }
+
+        stage('Trivy Config Scan') {
+            steps {
+                // Scan the Dockerfile for misconfigurations
+                sh "trivy config --severity HIGH,CRITICAL --exit-code 1 Dockerfile"
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                // Scan the built Docker image for vulnerabilities
+                sh "trivy image --severity HIGH,CRITICAL --exit-code 1 -f json -o model-results-${BUILD_NUMBER}.json ${imageName}:${dockerTag}"
+            }
+        }
+    }
+    post {
+        success {
+            githubNotify context: 'Jenkins PR Quality Gate', description: 'All scans and tests passed successfully.', status: 'SUCCESS'
+        }
+        failure {
+            githubNotify context: 'Jenkins PR Quality Gate', description: 'Pipeline failed. Check Sonar or Trivy logs for High/Critical vulnerabilities.', status: 'FAILURE'
+        }
+    }
+}

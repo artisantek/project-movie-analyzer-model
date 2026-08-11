@@ -1,0 +1,46 @@
+---
+# Model Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.model.name }}
+  labels:
+    app: {{ .Values.model.name }}
+spec:
+  replicas: {{ .Values.model.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.model.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.model.name }}
+    spec:
+      containers:
+      - name: {{ .Values.model.name }}
+        image: {{ .Values.model.image.repository }}:{{ .Values.model.image.tag }}
+        imagePullPolicy: {{ .Values.model.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.model.service.targetPort }}
+        env:
+        - name: MODEL_PORT
+          value: {{ .Values.model.env.MODEL_PORT | quote }}
+        resources:
+          requests:
+            memory: {{ .Values.model.resources.requests.memory }}
+            cpu: {{ .Values.model.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.model.resources.limits.memory }}
+            cpu: {{ .Values.model.resources.limits.cpu }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.model.probes.readiness.path }}
+            port: {{ .Values.model.probes.readiness.port }}
+          initialDelaySeconds: {{ .Values.model.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.model.probes.readiness.periodSeconds }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.model.probes.liveness.path }}
+            port: {{ .Values.model.probes.liveness.port }}
+          initialDelaySeconds: {{ .Values.model.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.model.probes.liveness.periodSeconds }} 
