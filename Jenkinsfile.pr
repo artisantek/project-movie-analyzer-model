@@ -77,10 +77,10 @@ pipeline {
     }
     post {
         success {
-            githubNotify context: 'Jenkins PR Quality Gate', description: 'All scans and tests passed successfully.', status: 'SUCCESS'
+            setGitHubPullRequestStatus context: 'Jenkins PR Quality Gate', message: 'All scans and tests passed successfully.', state: 'SUCCESS'
         }
         failure {
-            githubNotify context: 'Jenkins PR Quality Gate', description: 'Pipeline failed. Check Sonar or Trivy logs for High/Critical vulnerabilities.', status: 'FAILURE'
+            setGitHubPullRequestStatus context: 'Jenkins PR Quality Gate', message: 'Pipeline failed. Check Sonar or Trivy logs for High/Critical vulnerabilities.', state: 'FAILURE'
         }
     }
 }
