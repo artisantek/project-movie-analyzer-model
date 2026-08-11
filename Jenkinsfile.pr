@@ -25,12 +25,15 @@ pipeline {
 
         stage("Sonarqube Analysis") {
             steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh '''
-                    $SCANNER_HOME/bin/sonar-scanner \
-                    -Dsonar.projectName="movie-analyzer-model" \
-                    -Dsonar.projectKey="movie-analyzer-model"
-                    '''
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv('sonar-server') {
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \\
+                        -Dsonar.projectName="movie-analyzer-model" \\
+                        -Dsonar.projectKey="movie-analyzer-model"
+                        """
+                    }
                 }
             }
         }
@@ -70,14 +73,6 @@ pipeline {
                 // Scan the built Docker image for vulnerabilities
                 sh "trivy image --severity HIGH,CRITICAL --exit-code 1 -f json -o model-results-${BUILD_NUMBER}.json ${imageName}:${dockerTag}"
             }
-        }
-    }
-    post {
-        success {
-            githubNotify context: 'Jenkins PR Quality Gate', description: 'All scans and tests passed successfully.', status: 'SUCCESS'
-        }
-        failure {
-            githubNotify context: 'Jenkins PR Quality Gate', description: 'Pipeline failed. Check Sonar or Trivy logs for High/Critical vulnerabilities.', status: 'FAILURE'
         }
     }
 }
