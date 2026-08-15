@@ -1,0 +1,20 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: A Helm chart for Movie Analyzer application with sentiment analysis
+home: https://github.com/adithyagarapati/movie-analyzer
+keywords:
+- movie
+- analyzer
+- sentiment
+- analysis
+- spring-boot
+- react
+- postgresql
+maintainers:
+- email: support@example.com
+  name: Movie Analyzer Team
+name: movie-analyzer-model
+sources:
+- https://github.com/adithyagarapati/movie-analyzer
+type: application
+version: 0.1.0
